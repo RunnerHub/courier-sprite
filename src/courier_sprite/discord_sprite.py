@@ -145,8 +145,17 @@ class DiscordSprite(discord.Client):
 
         container.add_item(ui.Separator())
 
+        # Can't have more than 30 visual components, so we can't be generous with discord ui separators
+        body_separator = "\n━━━━━━━━━━━━━━━━━━━━\n"
+        raw_blocks = []
         for content in getattr(entry, "content", []):
-            container.add_item(ui.TextDisplay(content))
+            raw_blocks.extend(
+                part.strip()
+                for part in content.split("---")
+                if part.strip()
+            )
+        body_text = body_separator.join(raw_blocks)
+        container.add_item(ui.TextDisplay(body_text))
 
         container.add_item(ui.Separator())
 
