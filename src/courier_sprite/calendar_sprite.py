@@ -17,7 +17,7 @@ class GCalendar:
 
     def google(self):
         if self._google is None:
-            path = self.config.get("service_account_json", "calendar_service_account.json")
+            path = self.config.get("service_account_json", "calendar_secret.json")
             if not os.path.exists(path):
                 raise FileNotFoundError(
                     f"Missing service account JSON: {path}. "
