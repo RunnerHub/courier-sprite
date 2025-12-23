@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta, timezone
 
 import discord
@@ -8,12 +9,13 @@ from discord.ext import tasks
 
 from .time_sprite import TimeSprite
 
+log = logging.getLogger(__name__)
 
 class DiscordSprite(discord.Client):
 
     def arm_watch_trigger(self) -> None:
         self.watch_triggers.append(datetime.now(timezone.utc) + timedelta(minutes=self.config.get("rss").get("watch_timeout_min", 60)))
-        print("Added watch trigger; now", len(self.watch_triggers), "active")
+        log.info("Added watch trigger; now", len(self.watch_triggers), "active")
 
     def __init__(self, config, calendar, seen_posts, **kwargs):
         intents = discord.Intents.default()
@@ -28,14 +30,14 @@ class DiscordSprite(discord.Client):
         self.check_posts_loop.change_interval(minutes=interval)
 
     async def on_ready(self):
-        print(f'We have logged in as {self.user}')
+        log.info(f'We have logged in as {self.user}')
         await self.check_posts()
         # if not check_posts_loop.is_running():
         #     check_posts_loop.start()
 
 
     async def check_posts(self) -> int:
-        print("Checking posts at", datetime.now(timezone.utc))
+        log.info("Checking posts at", datetime.now(timezone.utc))
         seen_posts = self.seen_posts.data
         calendar = self.calendar
 
@@ -43,12 +45,12 @@ class DiscordSprite(discord.Client):
         if not channel:
             channel = await self.fetch_channel(self.config.get("discord").get("post_channel_id"))
         if channel is None:
-            print("Channel not found")
+            log.info("Channel not found")
             return 0
 
         feed = feedparser.parse(self.config.get("rss").get("url"), agent=self.config.get("rss").get("user_agent"))
         if hasattr(feed, "status"):
-            print(f"RSS Status: {feed.status}")
+            log.info(f"RSS Status: {feed.status}")
 
         # Process oldest-first so calendar events are created in chronological order
         entries = list(feed.entries)
@@ -57,7 +59,6 @@ class DiscordSprite(discord.Client):
         new_count = 0
 
         for entry in entries:
-            print(entry)
             entry_id = getattr(entry, "id", None) or entry.link
 
             # Already seen posts, ignore
@@ -68,7 +69,7 @@ class DiscordSprite(discord.Client):
             modified_entry = TimeSprite.reinterpret_post(entry)
 
             if modified_entry.parsed_time is None:
-                print(f"Skipping (no parsable timestamp): {modified_entry.title!r}")
+                log.info(f"Skipping (no parsable timestamp): {modified_entry.title!r}")
             else:
                 new_count += 1
 
@@ -89,7 +90,7 @@ class DiscordSprite(discord.Client):
                     entry_unique["discord_message_id"] = discord_message.id
 
                 self.seen_posts.set(entry_id, entry_unique)
-            print("-----")
+            log.info("-----")
         return new_count
 
     async def on_message(self, message):
@@ -111,14 +112,14 @@ class DiscordSprite(discord.Client):
                 await self.check_posts()
                 await message.add_reaction("✅")
             except Exception as e:
-                print("on_message error:", e)
+                log.info("on_message error:", e)
 
     @tasks.loop(minutes=5)  # placeholder; overwritten in __init__
     async def check_posts_loop(self):
         self.watch_triggers = [t for t in self.watch_triggers if t >= datetime.now(timezone.utc)]
 
         if not self.watch_triggers:
-            print("No active watch triggers; stopping loop")
+            log.info("No active watch triggers; stopping loop")
             self.check_posts_loop.stop()
             return
 
@@ -126,7 +127,7 @@ class DiscordSprite(discord.Client):
             await self.check_posts()
 
         except Exception as e:
-            print("check_posts_loop error:", e)
+            log.info("check_posts_loop error:", e)
 
     @staticmethod
     def build_view(entry, calendar_event_link, calendar_link) -> ui.LayoutView:
