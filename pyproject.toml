@@ -11,4 +11,5 @@ dependencies = [
   "feedparser",             # feedparser
   "google-auth",            # google.oauth2.service_account
   "google-api-python-client", # googleapiclient.discovery
+  "boltons",                # boltons.iterutils
 ]
