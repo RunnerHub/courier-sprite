@@ -1,0 +1,14 @@
+[project]
+name = "courier-sprite"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+  "python-dateutil",        # dateutil.parser
+  "beautifulsoup4",         # bs4.BeautifulSoup
+  "markdownify",            # markdownify.markdownify
+  "platformdirs",           # PlatformDirs
+  "discord.py",             # discord, discord.ui, discord.ext.tasks
+  "feedparser",             # feedparser
+  "google-auth",            # google.oauth2.service_account
+  "google-api-python-client", # googleapiclient.discovery
+]
