@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 import discord
 import feedparser
+from boltons.iterutils import first
 from discord import ui
 from discord.ext import tasks
 
@@ -11,7 +12,7 @@ from .time_sprite import TimeSprite
 class DiscordSprite(discord.Client):
 
     def arm_watch_trigger(self) -> None:
-        self.watch_triggers.append(datetime.now(timezone.utc) + timedelta(minutes=self.config.get("watch_timeout_min", 60)))
+        self.watch_triggers.append(datetime.now(timezone.utc) + timedelta(minutes=self.config.get("rss").get("watch_timeout_min", 60)))
         print("Added watch trigger; now", len(self.watch_triggers), "active")
 
     def __init__(self, config, calendar, seen_posts, **kwargs):
@@ -23,7 +24,7 @@ class DiscordSprite(discord.Client):
         self.config = config
         self.calendar = calendar
         self.seen_posts = seen_posts
-        interval = int(self.config.get("check_interval_min", 5))
+        interval = int(self.config.get("rss").get("check_interval_min", 5))
         self.check_posts_loop.change_interval(minutes=interval)
 
     async def on_ready(self):
@@ -38,14 +39,14 @@ class DiscordSprite(discord.Client):
         seen_posts = self.seen_posts.data
         calendar = self.calendar
 
-        channel = self.get_channel(self.config.get("discord_channel_id"))
+        channel = self.get_channel(self.config.get("discord").get("post_channel_id"))
         if not channel:
-            channel = await self.fetch_channel(self.config.get("discord_channel_id"))
+            channel = await self.fetch_channel(self.config.get("discord").get("post_channel_id"))
         if channel is None:
             print("Channel not found")
             return 0
 
-        feed = feedparser.parse(self.config.get("rss_url"), agent=self.config.get("rss_user_agent"))
+        feed = feedparser.parse(self.config.get("rss").get("url"), agent=self.config.get("rss").get("user_agent"))
         if hasattr(feed, "status"):
             print(f"RSS Status: {feed.status}")
 
@@ -56,6 +57,7 @@ class DiscordSprite(discord.Client):
         new_count = 0
 
         for entry in entries:
+            print(entry)
             entry_id = getattr(entry, "id", None) or entry.link
 
             # Already seen posts, ignore
@@ -94,13 +96,13 @@ class DiscordSprite(discord.Client):
         # Process only the webhook watch bot in the specific channel
         if (
                 not message.author.bot
-                or message.author.id != self.config.get("webhook_watch_id")
-                or message.channel.id != self.config.get("webhook_watch_channel")
+                or message.author.id != self.config.get("discord").get("webhook_watch_id")
+                or message.channel.id != self.config.get("discord").get("webhook_watch_channel")
         ):
             return
 
         # Only react in specific channel
-        if message.channel.id == self.config.get("webhook_watch_channel"):
+        if message.channel.id == self.config.get("discord").get("webhook_watch_channel"):
             try:
                 await message.add_reaction("👁️")
                 if not self.check_posts_loop.is_running():
@@ -130,8 +132,11 @@ class DiscordSprite(discord.Client):
     def build_view(entry, calendar_event_link, calendar_link) -> ui.LayoutView:
         container = ui.Container(accent_color=0x4444CC)
 
+        entry_tag = first(getattr(entry, "tags", None))
+        subreddit = getattr(entry_tag, "label", None) or getattr(entry_tag, "term", None) or "(Unknown subreddit!)"
+
         header = (
-                f"New Post in /r/RunnerHub!" +
+                f"New Post in {subreddit}!" +
                 f"\n# [{entry.title}]({entry.link})" +
                 (f"\n## Time: {TimeSprite.full_discord_time(entry.parsed_time)}" if entry.parsed_time else "")
         )

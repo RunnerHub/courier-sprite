@@ -1,16 +1,19 @@
 {
-  "rss_url": "https://www.reddit.com/r/RunnerHub/new/.rss",
-  "rss_user_agent": "courier-sprite/2.1 (by /u/yourname)",
-  "check_interval_min": 5,
-
+  "rss": {
+    "watch_timeout_min": 60,
+    "url": "https://www.reddit.com/r/RunnerHub/new/.rss",
+    "user_agent": "courier-sprite/2.1 (by /u/yourname)",
+    "check_interval_min": 5
+  },
   "google_calendar": {
     "calendar_name": "RunnerHub Job Postings",
     "timezone": "America/Los_Angeles",
     "event_duration_min": 240,
-    "admin_email": "claire.alexandria@gmail.com"
+    "admin_email": "youremail@yourservice.provider"
   },
-
-  "discord_channel_id": 501161059659415604,
-  "webhook_watch_id": 1448094880286117888,
-  "webhook_watch_channel": 295984758729474048
+  "discord": {
+    "post_channel_id": 12345678901234567890,
+    "webhook_watch_id": 12345678901234567890,
+    "webhook_watch_channel": 12345678901234567890
+  }
 }
