@@ -11,7 +11,8 @@ if __name__ == "__main__":
 
     # initialize google calendar service
     calendar_state: StateFile = StateFile("calendar_state.json")
-    gcal: GCalendar = GCalendar(config_file.get("google_calendar"), calendar_state)
+    google_secret = ConfigFile("calendar_secret.json")
+    gcal: GCalendar = GCalendar(config_file.get("google_calendar"), calendar_state, google_secret=google_secret)
     calendar_id: str = gcal.calendar_id()
 
     # initialize seen posts

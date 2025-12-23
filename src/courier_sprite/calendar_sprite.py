@@ -1,5 +1,4 @@
 import logging
-import os
 from datetime import timedelta
 from typing import Any
 from urllib.parse import quote
@@ -10,21 +9,16 @@ from googleapiclient.discovery import build
 log = logging.getLogger(__name__)
 
 class GCalendar:
-    def __init__(self, config, state_store):
+    def __init__(self, config, state_store, google_secret):
         self.config = config
         self.state = state_store
         self._google = None
+        self.google_secret = google_secret
 
     def google(self):
         if self._google is None:
-            path = self.config.get("service_account_json", "calendar_secret.json")
-            if not os.path.exists(path):
-                raise FileNotFoundError(
-                    f"Missing service account JSON: {path}. "
-                    f"Point config.service_account_json at the file."
-                )
-            creds = service_account.Credentials.from_service_account_file(
-                path, scopes=["https://www.googleapis.com/auth/calendar"]
+            creds = service_account.Credentials.from_service_account_info(
+                self.google_secret.data, scopes=["https://www.googleapis.com/auth/calendar"]
             )
             # cache_discovery=False avoids writing discovery cache files in odd environments
             self._google = build("calendar", "v3", credentials=creds, cache_discovery=False)
