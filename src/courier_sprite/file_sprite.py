@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from pathlib import Path
 
 from platformdirs import PlatformDirs
 
 from . import APP_NAME
+
+log = logging.getLogger(__name__)
 
 class CacheFile:
     _cache_dir = Path(PlatformDirs(appname=APP_NAME, appauthor=False).user_cache_dir)
@@ -48,6 +51,7 @@ class ConfigFile:
 
     def _load(self) -> dict:
         if not os.path.exists(self.path):
+            log.warn(f"File not found: {self.path}; proceeding without it")
             return {}
         try:
             with open(self.path, "r", encoding="utf-8") as f:

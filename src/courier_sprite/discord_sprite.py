@@ -1,10 +1,11 @@
 import logging
+import re
 from datetime import datetime, timedelta, timezone
 
 import discord
 import feedparser
 from boltons.iterutils import first
-from discord import ui
+from discord import ui, MediaGalleryItem
 from discord.ext import tasks
 
 from .time_sprite import TimeSprite
@@ -37,9 +38,8 @@ class DiscordSprite(discord.Client):
 
 
     async def check_posts(self) -> int:
-        log.info("Checking posts at", datetime.now(timezone.utc))
+        log.info("Checking posts at %s", datetime.now(timezone.utc))
         seen_posts = self.seen_posts.data
-        calendar = self.calendar
 
         channel = self.get_channel(self.config.get("discord").get("post_channel_id"))
         if not channel:
@@ -75,12 +75,18 @@ class DiscordSprite(discord.Client):
 
                 entry_unique = {"title": entry.title, "contents": entry.content}
                 event_id = None
+                calendar_event_link = ""
+                google_subscribe_link = ""
                 if entry_id in seen_posts:
                     event_id = seen_posts[entry_id].get("calendar_event_id") or None
-                calendar_event = calendar.put_event(modified_entry, event_id=event_id)
-                entry_unique["calendar_event_id"] = calendar_event.get('id')
+                if self.calendar:
+                    calendar_event = self.calendar.put_event(modified_entry, event_id=event_id)
+                    entry_unique["calendar_event_id"] = calendar_event.get('id')
+                    calendar_event_link = calendar_event.get('htmlLink')
+                    google_subscribe_link = self.calendar.google_subscribe_link()
 
-                view = self.build_view(modified_entry, calendar_event.get('htmlLink'), calendar.google_subscribe_link())
+                view = self.build_view(modified_entry, calendar_event_link, google_subscribe_link)
+                log.debug(view.to_components())
                 if entry_id in seen_posts and seen_posts[entry_id]["discord_message_id"]:
                     original_message = await channel.fetch_message(seen_posts[entry_id]["discord_message_id"])
                     # discord_message = \
@@ -149,13 +155,25 @@ class DiscordSprite(discord.Client):
         body_separator = "\n━━━━━━━━━━━━━━━━━━━━\n"
         raw_blocks = []
         for content in getattr(entry, "content", []):
-            raw_blocks.extend(
-                part.strip()
-                for part in content.split("---")
-                if part.strip()
-            )
+            for part in content.split("---"):
+                part = part.strip()
+                if part:
+                    raw_blocks.append(part)
+
         body_text = body_separator.join(raw_blocks)
-        container.add_item(ui.TextDisplay(body_text))
+
+        url_re = re.compile(r"<(https?://[^\s'\"]+\.(?:jpg|jpeg|png|gif|bmp|webp|svg)(?:\?[^\s'\"]*)?)>")
+        url_separated = url_re.split(body_text)
+        texts = url_separated[0::2] # slice every 2nd element starting at 0
+        urls = url_separated[1::2] # slice every 2nd element starting at 1
+
+        if len(urls) < 5: # max 5 inline images TODO: Configurable
+            container.add_item(ui.TextDisplay(texts[0].strip()))
+            for url_part, text_part in zip(urls, texts[1:]):
+                container.add_item(ui.MediaGallery(MediaGalleryItem(url_part)))
+                container.add_item(ui.TextDisplay(text_part.strip()))
+        else:
+            container.add_item(ui.TextDisplay(body_text))
 
         container.add_item(ui.Separator())
 
@@ -166,7 +184,7 @@ class DiscordSprite(discord.Client):
             f"Google Calendar: "
             f"[[Specific Event]]({calendar_event_link}) "
             f"[[Whole Calendar]]({calendar_link})\n"
-        )
+        ) if calendar_event_link or calendar_link else ""
         if author_href:
             footer += f"submitted by [{author_name}]({author_href})"
         else:

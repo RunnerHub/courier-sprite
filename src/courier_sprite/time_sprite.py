@@ -1,11 +1,14 @@
 
 import copy
+import logging
 import re
 from datetime import datetime
 
 import dateutil.parser as dparser
 from bs4 import BeautifulSoup
 from markdownify import markdownify
+
+log = logging.getLogger(__name__)
 
 class TimeSprite:
     def __init__(self):
@@ -69,7 +72,7 @@ class TimeSprite:
         def repl(match: re.Match) -> str:
             norm_time = TimeSprite.normalize_time(match.group("time"))
             combined = f"{match.group('date')} {norm_time}"
-            print(combined)
+            log.info(f"Timestamp parsed: {combined}")
             dt = dparser.parse(combined, fuzzy=True)
 
             # capture the very first dt once, to feed back to caller
@@ -99,7 +102,7 @@ class TimeSprite:
         try:
             title = TimeSprite._replace_datetimes(title, state)
         except Exception as e:
-            print("Error parsing title:", e)
+            log.error("Error parsing title:", e)
 
         state["title_time"] = state["first_time"]
         state["first_time"] = None
@@ -108,7 +111,7 @@ class TimeSprite:
             try:
                 contents[i] = TimeSprite._replace_datetimes(content, state)
             except Exception as e:
-                print("Error parsing content:", e)
+                log.error("Error parsing content:", e)
 
         parsed_time = state["title_time"] if state["title_time"] is not None else state["first_time"]
 
