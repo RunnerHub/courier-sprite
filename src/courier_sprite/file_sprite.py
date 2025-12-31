@@ -3,8 +3,9 @@ from __future__ import annotations
 import json
 import logging
 import os
-from pathlib import Path
 from collections.abc import Mapping, MutableMapping, Iterator
+from functools import lru_cache
+from pathlib import Path
 from typing import Any
 
 from platformdirs import PlatformDirs
@@ -17,6 +18,7 @@ class ReadableFile(Mapping[str, Any]):
     def __init__(self, _dir: Path, filename: str):
         self._dir = _dir
         self.path = _dir / filename
+        log.info("Using %s", self.path)
         self.data: dict[str, Any] = self._load()
 
     # File I/O (read-only)
@@ -83,17 +85,19 @@ class WriteableFile(ReadableFile, MutableMapping[str, Any]):
         self.save()
 
 
+# Cache the PlatformDirs at runtime rather than import time
+@lru_cache(maxsize=1)
+def _dirs() -> PlatformDirs:
+    return PlatformDirs(appname=APP_NAME, appauthor=False)
+
 class CacheFile(WriteableFile):
-    _cache_dir = Path(PlatformDirs(appname=APP_NAME, appauthor=False).user_cache_dir)
     def __init__(self, filename: str):
-        super().__init__(self._cache_dir, filename)
+        super().__init__(_dirs().user_cache_dir, filename)
 
 class ConfigFile(ReadableFile):
-    _config_dir = Path(PlatformDirs(appname=APP_NAME, appauthor=False).user_config_dir)
     def __init__(self, filename: str):
-        super().__init__(self._config_dir, filename)
+        super().__init__(_dirs().user_config_dir, filename)
 
 class StateFile(WriteableFile):
-    _state_dir = Path(PlatformDirs(appname=APP_NAME, appauthor=False).user_state_dir)
     def __init__(self, filename: str):
-        super().__init__(self._state_dir, filename)
+        super().__init__(_dirs().user_state_dir, filename)
