@@ -85,19 +85,19 @@ class WriteableFile(ReadableFile, MutableMapping[str, Any]):
         self.save()
 
 
-# Cache the PlatformDirs at runtime rather than import time
+# Cache the
 @lru_cache(maxsize=1)
 def _dirs() -> PlatformDirs:
     return PlatformDirs(appname=APP_NAME, appauthor=False)
 
 class CacheFile(WriteableFile):
     def __init__(self, filename: str):
-        super().__init__(_dirs().user_cache_dir, filename)
+        super().__init__(Path(_dirs().user_cache_dir), filename)
 
 class ConfigFile(ReadableFile):
     def __init__(self, filename: str):
-        super().__init__(_dirs().user_config_dir, filename)
+        super().__init__(Path(_dirs().user_config_dir), filename)
 
 class StateFile(WriteableFile):
     def __init__(self, filename: str):
-        super().__init__(_dirs().user_state_dir, filename)
+        super().__init__(Path(_dirs().user_state_dir), filename)
