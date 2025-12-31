@@ -1,0 +1,25 @@
+#!/bin/sh
+# Exit on error, error on undefined variables
+set -eu
+
+# load KEY, REPO_DIR, and BRANCH
+. /etc/courier-sprite/courier-sprite.env
+
+export GIT_SSH_COMMAND="ssh -i ${KEY} -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
+
+cd "$REPO_DIR"
+
+# Fetch and see if anything changed
+old="$(git rev-parse HEAD)"
+git fetch origin "$BRANCH"
+new="$(git rev-parse "origin/${BRANCH}")"
+
+if [ "$old" = "$new" ]; then
+  exit 0
+fi
+
+# Fast-forward only; refuse merges
+git merge --ff-only "origin/${BRANCH}"
+
+# Restart bot to pick up changes
+systemctl restart courier-sprite.service
