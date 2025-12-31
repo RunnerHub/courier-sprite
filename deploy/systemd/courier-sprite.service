@@ -1,0 +1,29 @@
+[Unit]
+Description=Courier Sprite
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=courier-sprite
+Group=courier-sprite
+
+WorkingDirectory=/opt/courier-sprite
+ExecStart=/opt/.venvs/courier-sprite/bin/python -m courier_sprite
+
+Environment=HOME=/var/lib/courier-sprite
+Environment=XDG_CONFIG_HOME=/etc
+Environment=XDG_STATE_HOME=/var/lib
+Environment=XDG_DATA_HOME=/var/lib
+Environment=XDG_CACHE_HOME=/var/cache
+
+Restart=on-failure
+RestartSec=5
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/lib/courier-sprite /var/cache/courier-sprite
+
+[Install]
+WantedBy=multi-user.target
