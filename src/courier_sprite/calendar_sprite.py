@@ -191,3 +191,8 @@ class GCalendar:
             event = events.insert(calendarId=cid, body=body).execute()
         log.info("Created event: %s", event.get("htmlLink"))
         return event
+
+    def delete_event(self, event_id: str):
+        cid = self.calendar_id()
+        events = self.google().events()
+        events.delete(calendarId=cid, eventId=event_id).execute()
