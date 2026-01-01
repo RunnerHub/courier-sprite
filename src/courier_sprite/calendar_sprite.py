@@ -1,5 +1,5 @@
 import logging
-from datetime import timedelta
+from datetime import timedelta, datetime, timezone
 from typing import Any
 from urllib.parse import quote
 
@@ -167,20 +167,22 @@ class GCalendar:
 
 
     # ===== EVENT CREATION =====
-
-    def _build_calendar_event(self, entry: Any) -> dict[str, Any]:
-        start_dt = entry.parsed_time
+    def _build_calendar_event(self, start_dt: datetime, title: str, reddit_link: str) -> dict[str, Any]:
         end_dt = start_dt + timedelta(minutes=self.config.get("event_duration_min", 240))
         return {
-            "summary": getattr(entry, "title", ""),
-            "description": f"Reddit thread: {getattr(entry, 'link', '')}",
+            "summary": title,
+            "description": f"Reddit thread: {getattr(reddit_link, 'link', '')}",
             "start": {"dateTime": start_dt.isoformat(), "timeZone": self.config.get("timezone", "UTC")},
             "end": {"dateTime": end_dt.isoformat(), "timeZone": self.config.get("timezone", "UTC")},
         }
-    
-    def put_event(self, entry, event_id: str | None = None):
+
+    def put_event(self, data: dict, event_id: str | None = None):
+        epoch = data.get("time")
+        title = data.get("title")
+        reddit_link = data.get("link")
+        start_dt = datetime.fromtimestamp(int(epoch), tz=timezone.utc)
         cid = self.calendar_id()
-        body = self._build_calendar_event(entry)
+        body = self._build_calendar_event(start_dt, title, reddit_link)
         events = self.google().events()
         if event_id:
             event = events.update(calendarId=cid, body=body, eventId=event_id).execute()
