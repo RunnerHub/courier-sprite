@@ -1,10 +1,4 @@
 {
-  "rss": {
-    "watch_timeout_min": 60,
-    "url": "https://www.reddit.com/r/RunnerHub/new/.rss",
-    "user_agent": "courier-sprite/2.1 (by /u/yourname)",
-    "check_interval_min": 5
-  },
   "google_calendar": {
     "calendar_name": "RunnerHub Job Postings",
     "timezone": "America/Los_Angeles",

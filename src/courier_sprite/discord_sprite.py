@@ -18,6 +18,7 @@ class DiscordSprite(discord.Client):
         intents = discord.Intents.default()
         intents.guilds = True
         intents.guild_messages = True
+        intents.message_content = True
         super().__init__(intents=intents, **kwargs)
         self.watch_triggers: list[datetime] = []
         self.config = config
