@@ -1,9 +1,17 @@
-#!/bin/sh
+#!/bin/bash
 # Exit on error, error on undefined variables
 set -eu
 
-# load KEY, REPO_DIR, and BRANCH
-. /etc/courier-sprite/courier-sprite.env
+# Usage: sudo update-sprite [sprite-type]
+usage() { echo "usage: $(basename "$0") [-h] [sprite-type]"; exit 0; }
+
+[[ $# -eq 0 ]] && usage
+[[ "$1" == "-h" ]] && usage
+[[ -z "$1" ]] && usage
+
+KEY=/var/lib/$1-sprite/.ssh/$1_sprite_pull
+REPO_DIR=/opt/$1-sprite
+BRANCH=main
 
 export GIT_SSH_COMMAND="ssh -i ${KEY} -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
 
@@ -22,4 +30,4 @@ fi
 git merge --ff-only "origin/${BRANCH}"
 
 # Restart bot to pick up changes
-systemctl restart courier-sprite.service
+systemctl restart $1-sprite.service

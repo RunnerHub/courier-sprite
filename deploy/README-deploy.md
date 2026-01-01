@@ -18,7 +18,6 @@ sudo mkdir -p /etc/courier-sprite /var/cache/courier-sprite
 Copy files (or create them):
 ```bash
 sudo cp -av courier-sprite/deploy/config/* /etc/courier-sprite/
-sudo cp -av courier-sprite/deploy/systemd/* /etc/systemd/system/
 sudo cp -av courier-sprite/deploy/sbin/* /usr/local/sbin/
 # If you had old state files in user directory
 sudo cp -av ~/.local/state/courier-sprite/. /var/lib/courier-sprite/
@@ -61,6 +60,7 @@ sudo /opt/.venvs/courier-sprite/bin/pip install /opt/courier-sprite
 
 And finally... start the service:
 ```bash
+sudo ln -sf /opt/courier-sprite/deploy/systemd/courier-sprite.service   /etc/systemd/system/courier-sprite.service
 sudo systemctl daemon-reload
 sudo systemctl enable --now courier-sprite
 ```
